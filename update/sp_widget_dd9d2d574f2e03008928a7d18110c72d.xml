@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[function() {
+	/* widget controller */
+	var c = this;
+	c.player_amounts = [{'value':1,'label':'One'},
+											{'value':2,'label':'Two'},
+											{'value':3,'label':'Three'},
+											{'value':4,'label':'Four'},
+											{'value':5,'label':'Five'},
+											{'value':6,'label':'Six'}];
+
+	c.data = {'game':'start','new':true,'player_number':c.player_amounts[1],'players':[]};
+
+	c.resetGame = function(){
+		c.data = {'game':'start','new':true,'player_number':c.player_amounts[1],'players':[]};
+	}
+
+	c.getNumber = function(num) {
+		var arr = [];
+		arr.length = c.data.player_number.value;
+		//alert("Array num is "+num+" |  The Array is "+arr.toString());
+		c.data.players = arr;   
+	}
+
+	c.startGame = function(){
+		var missingName = false;
+		for(var i = 0; i < c.data.players.length; i++){
+			if(!c.data.players[i] || !c.data.players[i].hasOwnProperty("name"))
+				missingName = true;
+		}
+		if(missingName){
+			alert("Please enter player name(s)");
+			return;
+		}
+		c.data.game = 'yahtzee';
+	}
+
+	c.topTotal = function(player,mult){
+		var total = 0;
+		if(player.ace)
+			total = total+(player.ace*1);
+		if(player.two)
+			total = total + (player.two*2);
+		if(player.three)
+			total = total + (player.three*3);
+		if(player.four)
+			total = total + (player.four*4);
+		if(player.five)
+			total = total + (player.five*5);
+		if(player.six)
+			total = total + (player.six*6);
+
+		player.top = total;
+		if(total >= 63)
+			player.top_bonus = 35;
+		else
+			player.top_bonus = null;
+
+		if(player.top_bonus)
+			player.top_total = player.top_bonus + player.top;
+		else
+			player.top_total = player.top;
+
+		if(player.lower_total)
+			player.grand_total = player.top_total + player.lower_total;
+		else
+			player.grand_total = player.top_total;
+
+		return player;
+	}
+
+	c.lowerTotal = function(player){
+		var total = 0;
+		if(player.three_kind)
+			total = total+player.three_kind;
+		if(player.four_kind)
+			total = total + player.four_kind;
+		if(player.full_house)
+			total = total + player.full_house;
+		if(player.small_straight)
+			total = total + player.small_straight;
+		if(player.large_straight)
+			total = total + player.large_straight;
+		if(player.yahtzee)
+			total = total + player.yahtzee;
+		if(player.chance)
+			total = total + player.chance;
+		if(player.yahtzee_bonus)
+			total = total + player.yahtzee_bonus;
+
+		player.lower_total = total;
+
+		if(player.top_total)
+			player.grand_total = player.top_total + player.lower_total;
+		else
+			player.grand_total = player.lower_total;
+
+		return player;
+	}
+
+	c.rematchGame = function(){
+		var players = [];
+		for(var i = 0; i<c.data.players.length; i++){
+			var player = {'name':c.data.players[i].name};
+			players.push(player);
+		}
+		c.data.players = players;
+	}
+}]]></client_script>
+        <controller_as>c</controller_as>
+        <css/>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>true</has_preview>
+        <id>yahtzee_scorecard</id>
+        <internal>false</internal>
+        <link/>
+        <name>Yahtzee Scorecard</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function() {  /* populate the 'data' object */  /* e.g., data.table = $sp.getValue('table'); */})();]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2017-11-25 19:09:51</sys_created_on>
+        <sys_id>dd9d2d574f2e03008928a7d18110c72d</sys_id>
+        <sys_mod_count>137</sys_mod_count>
+        <sys_name>Yahtzee Scorecard</sys_name>
+        <sys_package display_value="Yahtzee Scorecard" source="x_26578_yahtzee">823d61174f2e03008928a7d18110c7aa</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Yahtzee Scorecard">823d61174f2e03008928a7d18110c7aa</sys_scope>
+        <sys_update_name>sp_widget_dd9d2d574f2e03008928a7d18110c72d</sys_update_name>
+        <sys_updated_by>madeleonardis</sys_updated_by>
+        <sys_updated_on>2018-01-08 20:25:31</sys_updated_on>
+        <template><![CDATA[<div ng-show="c.data.game == 'start'">
+  <!-- your widget template -->
+  <div class="container well" ng-show="data.new">
+    <div class="form-group">
+      <label for="player_count">How many Players</label>
+      <div class="input-group">
+        <select id="player_count" class="form-control" ng-model="data.player_number" ng-options="player.label for player in c.player_amounts">
+          <option value="">Select # of Players</option>
+        </select>
+        <span class="input-group-btn">
+          <button class="btn btn-default" type="button" ng-click="c.data.new=false;c.getNumber();">Go!</button>
+        </span>
+      </div>
+    </div>
+  </div>
+  <div class="container well" ng-hide="data.new">
+    <h3>
+      Enter player names
+    </h3>
+    <div ng-repeat="player in c.data.players track by $index">
+      <div form-group>
+        <label for="name_input">Player {{$index+1}}</label>
+        <input id="name_input" class="form-control" ng-model="c.data.players[$index].name" />
+      </div>
+    </div>
+    <div class="form-group row">
+      <br/>
+      <div style="text-align:center;">
+        <button class="btn btn-primary" ng-click="c.startGame()">
+          Click to Play
+        </button>
+        <button class="btn btn-danger" ng-click="c.resetGame()">
+          Reset
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div ng-show="c.data.game == 'yahtzee'">
+  <table style="border:2px solid #821915;margin: 5px;padding: 5px;border-spacing: 0;border-collapse: separate;" cellpadding="2" cellspacing="0">
+    <thead style="background-color:#821915;color:white;">
+      <tr valign="top">
+        <th class="desc" class="col-xs-2">UPPER SECTION</th>
+        <th style="text-align:center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">{{player.name}}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="col-xs-2">Aces</td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input class="col-xs-12 form-control" type="number" step="1" min='0' max='5' inputmode="numeric" pattern="[0-9]*" ng-model="player.ace" ng-change="c.topTotal(player,1)" style=" text-align:center;"/>
+        </td>                   
+      </tr>
+      <tr>
+        <td class="col-xs-2">Twos</td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input class="col-xs-12 form-control" type="number" step="2" min='0' max='10' inputmode="numeric" pattern="[0-9]*" ng-model="player.two" ng-change="c.topTotal(player,2)" style=" text-align:center;"/>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-xs-2">Threes</td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input class="col-xs-12 form-control" type="number" step="3" min='0' max='15' inputmode="numeric" pattern="[0-9]*" ng-model="player.three" ng-change="c.topTotal(player,3)" style=" text-align:center;"/>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-xs-2">Fours</td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input class="col-xs-12 form-control" type="number" step="4" min='0' max='20' inputmode="numeric" pattern="[0-9]*" ng-model="player.four" ng-change="c.topTotal(player,4)" style=" text-align:center;"/>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-xs-2">Fives</td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input class="col-xs-12 form-control" type="number" step="5" min='0' max='25' inputmode="numeric" pattern="[0-9]*" ng-model="player.five" ng-change="c.topTotal(player,5)" style=" text-align:center;"/>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-xs-2">Sixes</td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input class="col-xs-12 form-control" type="number" step="6" min='0' max='30' inputmode="numeric" pattern="[0-9]*" ng-model="player.six" ng-change="c.topTotal(player,6)" style=" text-align:center;"/>
+        </td>
+      </tr>
+
+      <tr>
+        <td class="col-xs-2"><strong>TOTAL</strong></td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input disabled class="col-xs-12 form-control" type="number" ng-model="player.top" style="background:lightgray; text-align:center;"/>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-xs-2"><strong>BONUS</strong></td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input disabled class="col-xs-12 form-control" type="number" ng-model="player.top_bonus" style="background: lightgray; text-align:center;"/>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-xs-2"><strong>UPPER TOTAL</strong></td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input disabled class="col-xs-12 form-control" type="number" ng-model="player.top_total" style="background: lightgray; text-align:center;"/>
+        </td>
+      </tr>
+    </tbody>
+
+    <thead style="background-color:#821915;color:white;">
+      <tr>
+        <th class="col-xs-2" style="padding-top:5px">LOWER SECTION</th>
+        <th style="text-align:center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="col-xs-2">3 of a kind</td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input class="col-xs-12 form-control" type="number" inputmode="numeric" pattern="[0-9]*" ng-model="player.three_kind" min="0" ng-change="c.lowerTotal(player)" style="text-align:center;"/>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-xs-2">4 of a kind</td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input class="col-xs-12 form-control" type="number" inputmode="numeric" pattern="[0-9]*" ng-model="player.four_kind" min="0" ng-change="c.lowerTotal(player)" style="text-align:center;"/>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-xs-2">Full House (25)</td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input class="col-xs- form-control" type="number" inputmode="numeric" pattern="[0-9]*" ng-model="player.full_house" step="25" min="0" max="25" ng-change="c.lowerTotal(player)" style="text-align:center;"/>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-xs-2">Sm. Straight (30)</td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input class="col-xs-12 form-control" type="number" inputmode="numeric" pattern="[0-9]*" ng-model="player.small_straight" step="30" min="0" max="30" ng-change="c.lowerTotal(player)" style="text-align:center;"/>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-xs-2">Lg. Straight (40)</td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input class="col-xs-12 form-control" type="number" inputmode="numeric" pattern="[0-9]*" ng-model="player.large_straight" step="40" min="0" max="40" ng-change="c.lowerTotal(player)" style="text-align:center;"/>
+        </td>
+      </tr>
+      <tr>
+        <td class="col-xs-2">YAHTZEE (50)</td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input class="col-xs-12 form-control" type="number" inputmode="numeric" pattern="[0-9]*" ng-model="player.yahtzee" step="50" min="0" max="50" ng-change="c.lowerTotal(player)" style="text-align:center;"/>
+        </td>
+      </tr>
+      
+      <tr>
+        <td class="col-xs-2">Chance</td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input class="col-xs-12 form-control" type="number" inputmode="numeric" pattern="[0-9]*" ng-model="player.chance" min="0" ng-change="c.lowerTotal(player)" style="text-align:center;"/>
+        </td>
+      </tr>
+
+      <tr>
+        <td class="col-xs-2">YAHTZEE BONUS (+100)</td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input class="col-xs-12 form-control" type="number" inputmode="numeric" pattern="[0-9]*" ng-model="player.yahtzee_bonus" step="100" min="0" ng-change="c.lowerTotal(player)" style="text-align:center;"/>
+        </td>
+      </tr>
+      
+      <tr>
+        <td class="col-xs-2"><strong>LOWER TOTAL</strong></td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input disabled class="col-xs-12 form-control" type="number" ng-model="player.lower_total" style="background: lightgray; text-align:center;"/>
+        </td>
+      </tr>
+      
+      <tr>
+        <td class="col-xs-2"><strong>UPPER TOTAL</strong></td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input disabled class="col-xs-12 form-control" type="number" ng-model="player.top_total" style="background: lightgray; text-align:center;"/>
+        </td>
+      </tr>
+
+      <tr>
+        <td class="col-xs-2"><strong>GRAND TOTAL</strong></td>
+        <td style="text-align: center;" ng-repeat="player in c.data.players track by $index" class="col-xs-1">
+          <input disabled class="col-xs-12 form-control" type="number" ng-model="player.grand_total" style="background: lightgray; text-align:center;"/>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  
+    <div class="form-group row">
+      <br/>
+      <div style="text-align:center;">
+        <button class="btn btn-primary" ng-click="c.rematchGame()">
+          Rematch
+        </button>
+        <button class="btn btn-danger" ng-click="c.resetGame()">
+          Reset
+        </button>
+      </div>
+    </div>
+</div>]]></template>
+    </sp_widget>
+</record_update>
